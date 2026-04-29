@@ -1,0 +1,12 @@
+# Musiki demo song list
+# Format: ARTIST=Sanatci | https://www.youtube.com/playlist?list=...
+# YouTube'da "{Sanatci} en iyileri / best of" diye arayip resmi/kalabalik bir playlist sec.
+# Tek sarki da eklenebilir: ARTIST=Sanatci | https://www.youtube.com/watch?v=...
+# Bos URL'li satirlar atlanir (uyari verir, indirme baslamaz).
+
+ARTIST=Manifest       |         https://www.youtube.com/playlist?list=PLN9sAeoGw4Fh12V2ruXxiIUTQIBz1yZjc
+ARTIST=Ati242         |         https://www.youtube.com/playlist?list=PLuT3wnDDtxFgwszUvhUiQp3BPy0sRqlmq
+ARTIST=Duman          |         https://www.youtube.com/playlist?list=PLovRZbEwYy6g_7u3YLtGy2o42OylAlS0M
+ARTIST=maNga          |         https://www.youtube.com/playlist?list=PL6Bvgw-lgFWidPz7s2BHY-Zp6uXL9ndgk
+ARTIST=Sezen Aksu     |         https://www.youtube.com/playlist?list=PLQuudIe95KFMoO_lAch-rpXt9rXOl8ezM
+ARTIST=Sagopa Kajmer  |         https://www.youtube.com/playlist?list=PLPtXmOe4COLNRHKMkesnS7PK6OjkqL6eA

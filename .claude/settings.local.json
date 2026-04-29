@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pg_isready -h localhost -p 5432)",
+      "Bash(psql --version)",
+      "Bash(.venv/Scripts/python.exe -c \"import django; print\\(django.__version__\\)\")",
+      "Bash(.venv/Scripts/python.exe -c \"import rest_framework, corsheaders, django_filters, psycopg2; print\\(''OK''\\)\")",
+      "Bash(.venv/Scripts/python.exe -c \"import rest_framework_simplejwt; print\\(''JWT OK''\\)\")",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.dev .venv/Scripts/python.exe manage.py migrate)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.dev .venv/Scripts/python.exe manage.py makemigrations users)",
+      "Bash(curl -s -X POST http://127.0.0.1:8000/api/auth/register/ -H \"Content-Type: application/json\" -d \"{\"\"username\"\":\"\"testuser\"\",\"\"email\"\":\"\"test@musiki.com\"\",\"\"password\"\":\"\"Test1234!\"\",\"\"password_confirm\"\":\"\"Test1234!\"\"}\")",
+      "Bash(.venv/Scripts/pip install:*)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.dev .venv/Scripts/python.exe manage.py makemigrations music)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.dev .venv/Scripts/python.exe manage.py ingest_songs --dir \"c:/Users/ozkan/Desktop/musiki-fullstack/logicofsongrecognition/musics\" --album \"Duman Koleksiyonu\" --genre rock)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.dev .venv/Scripts/python.exe -c \":*)",
+      "Bash(DJANGO_SETTINGS_MODULE=config.settings.dev PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe manage.py ingest_songs --dir \"c:/Users/ozkan/Desktop/musiki-fullstack/logicofsongrecognition/musics\" --album \"Duman Koleksiyonu\" --genre rock)",
+      "Bash(BASE=\"c:/Users/ozkan/Desktop/musiki-fullstack/musiki_frontend/app/src/main/java/com/ozkanilkay/musiki_frontend\")",
+      "Bash(mkdir -p \"$BASE/data/model\" \"$BASE/data/remote\" \"$BASE/data/repository\" \"$BASE/di\" \"$BASE/ui/auth\" \"$BASE/ui/home\" \"$BASE/ui/search\" \"$BASE/ui/recognize\" \"$BASE/ui/profile\" \"$BASE/ui/navigation\")"
+    ]
+  }
+}

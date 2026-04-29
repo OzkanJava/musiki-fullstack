@@ -1,0 +1,10 @@
+88 sarki, 8s kesit @ 30s
+======================================================================
+
+SENARYO      ACIKLAMA                                  SONUC  HATALAR
+----------------------------------------------------------------------
+clean        Temiz kesit (referans)                    74/88  Gurbet (Live At Bo, Haberin Yok Ölüyor, Halimiz Duman, Melankoli (Officia, Rüyanda Görsen Ýna +9
+snr10        Beyaz gurultu SNR=10dB (kafe)             73/88  Haberin Yok Ölüyor, Halimiz Duman, Melankoli (Officia, Rüyanda Görsen Ýna, Senden Daha Güzel +10
+snr5         Beyaz gurultu SNR=5dB (sokak)             74/88  Haberin Yok Ölüyor, Halimiz Duman, Melankoli (Officia, Rüyanda Görsen Ýna, Senden Daha Güzel +9
+combined     Gercekci: SNR15 + lowpass4k + reverb      73/88  Gurbet (Live At Bo, Haberin Yok Ölüyor, Halimiz Duman, Melankoli (Officia, Senden Daha Güzel +10
+----------------------------------------------------------------------

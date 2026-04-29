@@ -1,0 +1,67 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.venv/
+venv/
+env/
+*.sqlite3
+*.sqlite3-journal
+musiki_backend/staticfiles/
+
+# Audio (telif)
+*.mp3
+*.wav
+*.flac
+*.m4a
+*.ogg
+
+# Fingerprint / büyük çıktı
+media/fingerprints/
+media/temp/
+media/recognize_uploads/
+media/cache/
+*.fp
+
+# Postgres / Redis volume
+postgres_data/
+redis_data/
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+credentials.json
+
+# Android / Gradle
+musiki_frontend/.gradle/
+musiki_frontend/app/build/
+musiki_frontend/build/
+musiki_frontend/local.properties
+musiki_frontend/.idea/
+musiki_frontend/captures/
+*.apk
+*.aab
+*.iml
+*.hprof
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+# Fingerprint / DB dosyaları
+*.db
+*.db.bak*
+seekture.db*
+
+# Binary tools
+*.exe
