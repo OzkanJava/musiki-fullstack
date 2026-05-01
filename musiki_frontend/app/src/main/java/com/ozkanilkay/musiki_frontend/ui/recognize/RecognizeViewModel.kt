@@ -32,13 +32,15 @@ sealed class RecognizeState {
     data class Recording(val secondsLeft: Int) : RecognizeState()
     data class Recorded(val isPlaying: Boolean = false, val rmsDb: Double = 0.0) : RecognizeState()
     object Uploading : RecognizeState()
-    data class Matched(val result: RecognizeSongResult) : RecognizeState()
-    data class NoMatch(
-        val reason: String? = null,
-        val detail: String? = null,
-        val candidate: RecognizeSongResult? = null,
-        val totalHashes: Int? = null,
+    data class Matched(
+        val topMatch: RecognizeSongResult,
+        val alternatives: List<RecognizeSongResult>,
     ) : RecognizeState()
+    data class NearMatches(
+        val guesses: List<RecognizeSongResult>,
+        val detail: String?,
+    ) : RecognizeState()
+    data class NoMatch(val detail: String?) : RecognizeState()
     data class Error(val message: String) : RecognizeState()
 }
 
@@ -130,15 +132,16 @@ class RecognizeViewModel @Inject constructor(
                 val resp = api.recognizeSong(part)
                 if (resp.isSuccessful) {
                     val body = resp.body()!!
-                    _state.value = if (body.song != null) {
-                        RecognizeState.Matched(body.song)
-                    } else {
-                        RecognizeState.NoMatch(
-                            reason      = body.reason,
-                            detail      = body.detail,
-                            candidate   = body.candidate,
-                            totalHashes = body.total_hashes,
+                    _state.value = when {
+                        body.accepted && body.candidates.isNotEmpty() -> RecognizeState.Matched(
+                            topMatch = body.candidates.first(),
+                            alternatives = body.candidates.drop(1),
                         )
+                        body.candidates.isNotEmpty() -> RecognizeState.NearMatches(
+                            guesses = body.candidates,
+                            detail = body.detail,
+                        )
+                        else -> RecognizeState.NoMatch(detail = body.detail)
                     }
                 } else {
                     _state.value = RecognizeState.Error("Sunucu hatası (${resp.code()})")

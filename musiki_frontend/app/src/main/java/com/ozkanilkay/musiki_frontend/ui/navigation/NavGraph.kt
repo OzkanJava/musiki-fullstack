@@ -142,7 +142,10 @@ fun MusikiNavGraph(
                 )
             }
             composable(Screen.Recognize.route) {
-                RecognizeScreen()
+                RecognizeScreen(
+                    onOpenArtist = { id -> navController.navigate(Screen.ArtistDetail.buildRoute(id)) },
+                    onOpenAlbum  = { id -> navController.navigate(Screen.AlbumDetail.buildRoute(id)) },
+                )
             }
             composable(Screen.Upload.route) {
                 UploadScreen(onBack = { navController.popBackStack() })

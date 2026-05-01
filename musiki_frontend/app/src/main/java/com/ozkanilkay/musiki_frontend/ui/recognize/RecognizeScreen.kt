@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,16 +24,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import com.ozkanilkay.musiki_frontend.data.model.RecognizeSongResult
 import com.ozkanilkay.musiki_frontend.ui.theme.Musiki
 
 @Composable
 fun RecognizeScreen(
+    onOpenArtist: (Int) -> Unit,
+    onOpenAlbum: (Int) -> Unit,
     viewModel: RecognizeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -52,6 +59,11 @@ fun RecognizeScreen(
 
         if (granted) viewModel.startRecognition()
         else permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+    }
+
+    fun openSong(song: RecognizeSongResult) {
+        if (song.album != null) onOpenAlbum(song.album.id)
+        else onOpenArtist(song.artist.id)
     }
 
     Column(
@@ -78,16 +90,24 @@ fun RecognizeScreen(
             is RecognizeState.Uploading -> UploadingContent()
 
             is RecognizeState.Matched -> MatchedContent(
-                result  = s.result,
-                onRetry = viewModel::reset,
+                topMatch     = s.topMatch,
+                alternatives = s.alternatives,
+                onOpenSong   = ::openSong,
+                onOpenArtist = onOpenArtist,
+                onRetry      = viewModel::reset,
+            )
+
+            is RecognizeState.NearMatches -> NearMatchesContent(
+                guesses      = s.guesses,
+                detail       = s.detail,
+                onOpenSong   = ::openSong,
+                onOpenArtist = onOpenArtist,
+                onRetry      = viewModel::reset,
             )
 
             is RecognizeState.NoMatch -> NoMatchContent(
-                reason      = s.reason,
-                detail      = s.detail,
-                candidate   = s.candidate,
-                totalHashes = s.totalHashes,
-                onRetry     = viewModel::reset,
+                detail  = s.detail,
+                onRetry = viewModel::reset,
             )
 
             is RecognizeState.Error -> ErrorContent(
@@ -176,7 +196,6 @@ private fun RecordingContent(secondsLeft: Int) {
     )
 
     Box(contentAlignment = Alignment.Center) {
-        // Outer pulsing ring
         Box(
             modifier = Modifier
                 .size(160.dp)
@@ -184,7 +203,6 @@ private fun RecordingContent(secondsLeft: Int) {
                 .clip(CircleShape)
                 .background(c.primary.copy(alpha = 0.25f)),
         )
-        // Inner circle
         Box(
             modifier = Modifier
                 .size(120.dp)
@@ -269,7 +287,6 @@ private fun RecordedContent(
 
     Spacer(Modifier.height(32.dp))
 
-    // Playback toggle
     OutlinedButton(
         onClick = onTogglePlay,
         modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -292,7 +309,6 @@ private fun RecordedContent(
 
     Spacer(Modifier.height(12.dp))
 
-    // Send to backend
     Button(
         onClick = onSend,
         modifier = Modifier.fillMaxWidth().height(52.dp),
@@ -304,7 +320,6 @@ private fun RecordedContent(
 
     Spacer(Modifier.height(8.dp))
 
-    // Re-record
     TextButton(onClick = onReRecord) {
         Icon(Icons.Default.Refresh, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(4.dp))
@@ -341,13 +356,16 @@ private fun UploadingContent() {
 
 @Composable
 private fun MatchedContent(
-    result: com.ozkanilkay.musiki_frontend.data.model.RecognizeSongResult,
+    topMatch: RecognizeSongResult,
+    alternatives: List<RecognizeSongResult>,
+    onOpenSong: (RecognizeSongResult) -> Unit,
+    onOpenArtist: (Int) -> Unit,
     onRetry: () -> Unit,
 ) {
     val c = Musiki.colors
     Box(
         modifier = Modifier
-            .size(96.dp)
+            .size(72.dp)
             .clip(CircleShape)
             .background(c.success.copy(alpha = 0.15f)),
         contentAlignment = Alignment.Center,
@@ -356,11 +374,11 @@ private fun MatchedContent(
             imageVector = Icons.Default.Check,
             contentDescription = null,
             tint = c.success,
-            modifier = Modifier.size(48.dp),
+            modifier = Modifier.size(40.dp),
         )
     }
 
-    Spacer(Modifier.height(24.dp))
+    Spacer(Modifier.height(16.dp))
 
     Text(
         text = "Bulundu!",
@@ -371,69 +389,86 @@ private fun MatchedContent(
 
     Spacer(Modifier.height(20.dp))
 
-    // Result card
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = c.darkGray),
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(c.gray),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Default.MusicNote, contentDescription = null, tint = c.primary, modifier = Modifier.size(28.dp))
-            }
-            Column {
-                Text(
-                    text = result.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = c.textPrimary,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = result.artist,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = c.textSecondary,
-                )
-                if (result.album != null) {
-                    Text(
-                        text = result.album,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = c.textDisabled,
-                    )
-                }
-                Spacer(Modifier.height(6.dp))
-                val quality = result.match_quality ?: "LOW"
-                val (qualityLabel, qualityColor) = when (quality) {
-                    "HIGH"   -> "Yüksek güven" to c.success
-                    "MEDIUM" -> "Orta güven"   to c.primary
-                    "LOW"    -> "Zayıf eşleşme (mic kaydı)" to c.textSecondary
-                    else     -> "Düşük güven"  to c.textSecondary
-                }
-                Text(
-                    text = "$qualityLabel  ·  skor ${result.confidence}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = qualityColor,
-                )
-            }
+    TopMatchCard(
+        song = topMatch,
+        onOpenSong = onOpenSong,
+        onOpenArtist = onOpenArtist,
+    )
+
+    if (alternatives.isNotEmpty()) {
+        Spacer(Modifier.height(20.dp))
+        Text(
+            text = "Diğer olası eşleşmeler",
+            style = MaterialTheme.typography.titleSmall,
+            color = c.textSecondary,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(8.dp))
+        alternatives.forEach { alt ->
+            AlternativeCard(
+                song = alt,
+                onOpenSong = onOpenSong,
+                onOpenArtist = onOpenArtist,
+            )
+            Spacer(Modifier.height(8.dp))
         }
     }
 
-    Spacer(Modifier.height(24.dp))
+    Spacer(Modifier.height(20.dp))
 
     OutlinedButton(
         onClick = onRetry,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp),
+        modifier = Modifier.fillMaxWidth().height(48.dp),
+        shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, c.primary),
+    ) {
+        Text("Tekrar Dene", color = c.primary)
+    }
+}
+
+// ── NearMatches (REJECTED ama yakın tahminler) ────────────────────────────────
+
+@Composable
+private fun NearMatchesContent(
+    guesses: List<RecognizeSongResult>,
+    detail: String?,
+    onOpenSong: (RecognizeSongResult) -> Unit,
+    onOpenArtist: (Int) -> Unit,
+    onRetry: () -> Unit,
+) {
+    val c = Musiki.colors
+    Text(
+        text = "Yakın tahminler",
+        style = MaterialTheme.typography.headlineSmall,
+        color = c.textPrimary,
+        fontWeight = FontWeight.Bold,
+    )
+
+    Spacer(Modifier.height(8.dp))
+
+    Text(
+        text = detail ?: "Tam emin değilim, en yakın tahminler bunlar:",
+        style = MaterialTheme.typography.bodyMedium,
+        color = c.textSecondary,
+        textAlign = TextAlign.Center,
+    )
+
+    Spacer(Modifier.height(20.dp))
+
+    guesses.forEach { g ->
+        AlternativeCard(
+            song = g,
+            onOpenSong = onOpenSong,
+            onOpenArtist = onOpenArtist,
+        )
+        Spacer(Modifier.height(8.dp))
+    }
+
+    Spacer(Modifier.height(16.dp))
+
+    OutlinedButton(
+        onClick = onRetry,
+        modifier = Modifier.fillMaxWidth().height(48.dp),
         shape = RoundedCornerShape(12.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, c.primary),
     ) {
@@ -444,13 +479,7 @@ private fun MatchedContent(
 // ── NoMatch ───────────────────────────────────────────────────────────────────
 
 @Composable
-private fun NoMatchContent(
-    reason: String?,
-    detail: String?,
-    candidate: com.ozkanilkay.musiki_frontend.data.model.RecognizeSongResult?,
-    totalHashes: Int?,
-    onRetry: () -> Unit,
-) {
+private fun NoMatchContent(detail: String?, onRetry: () -> Unit) {
     val c = Musiki.colors
     Box(
         modifier = Modifier
@@ -477,66 +506,18 @@ private fun NoMatchContent(
     )
     Spacer(Modifier.height(8.dp))
 
-    val headline = when (reason) {
-        "silence"        -> "Kayıt çok sessiz — müzik yakalanamadı."
-        "no_match"       -> "Bu şarkı veritabanımızda yok."
-        "low_confidence" -> "Zayıf sinyal — güven eşiğinin altında."
-        else             -> "Bu şarkı veritabanımızda yok\nveya ses çok gürültülüydü."
-    }
     Text(
-        text = headline,
+        text = detail ?: "Bu şarkı veritabanımızda yok\nveya ses çok gürültülüydü.",
         style = MaterialTheme.typography.bodyMedium,
         color = c.textSecondary,
         textAlign = TextAlign.Center,
     )
 
-    // Debug bilgisi — en yakin aday varsa goster
-    if (candidate != null) {
-        Spacer(Modifier.height(16.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = c.darkGray),
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                Text(
-                    text = "En yakın aday (kabul edilmedi):",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = c.textDisabled,
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "${candidate.artist} - ${candidate.title}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = c.textPrimary,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Spacer(Modifier.height(4.dp))
-                val ratioStr = candidate.ratio?.let { String.format("%.2fx", it) } ?: "-"
-                Text(
-                    text = "skor ${candidate.confidence}  ·  ratio $ratioStr  ·  " +
-                           "güven ${candidate.match_quality ?: "-"}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = c.textSecondary,
-                )
-                if (totalHashes != null) {
-                    Text(
-                        text = "query: $totalHashes hash üretildi",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = c.textDisabled,
-                    )
-                }
-            }
-        }
-    }
-
     Spacer(Modifier.height(24.dp))
 
     Button(
         onClick = onRetry,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp),
+        modifier = Modifier.fillMaxWidth().height(52.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(containerColor = c.primary),
     ) {
@@ -576,12 +557,131 @@ private fun ErrorContent(message: String, onRetry: () -> Unit) {
 
     Button(
         onClick = onRetry,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp),
+        modifier = Modifier.fillMaxWidth().height(52.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(containerColor = c.primary),
     ) {
         Text("Tekrar Dene")
+    }
+}
+
+// ── Reusable cards ────────────────────────────────────────────────────────────
+
+@Composable
+private fun TopMatchCard(
+    song: RecognizeSongResult,
+    onOpenSong: (RecognizeSongResult) -> Unit,
+    onOpenArtist: (Int) -> Unit,
+) {
+    val c = Musiki.colors
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpenSong(song) },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = c.darkGray),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            CoverBox(coverUrl = song.cover_image, size = 72)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = song.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = c.textPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = song.artist.username,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = c.textSecondary,
+                    modifier = Modifier.clickable { onOpenArtist(song.artist.id) },
+                )
+                if (song.album != null) {
+                    Text(
+                        text = song.album.title,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = c.textDisabled,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AlternativeCard(
+    song: RecognizeSongResult,
+    onOpenSong: (RecognizeSongResult) -> Unit,
+    onOpenArtist: (Int) -> Unit,
+) {
+    val c = Musiki.colors
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpenSong(song) },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = c.darkGray.copy(alpha = 0.6f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            CoverBox(coverUrl = song.cover_image, size = 48)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = song.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = c.textPrimary,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = song.artist.username,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = c.textSecondary,
+                    modifier = Modifier.clickable { onOpenArtist(song.artist.id) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CoverBox(coverUrl: String?, size: Int) {
+    val c = Musiki.colors
+    if (!coverUrl.isNullOrBlank()) {
+        AsyncImage(
+            model = coverUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(size.dp)
+                .clip(RoundedCornerShape(8.dp)),
+        )
+    } else {
+        Box(
+            modifier = Modifier
+                .size(size.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(c.gray),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.MusicNote,
+                contentDescription = null,
+                tint = c.primary,
+                modifier = Modifier.size((size * 0.45).dp),
+            )
+        }
     }
 }

@@ -291,44 +291,11 @@ class RecognizeView(APIView):
             tmp_path = tmp.name
 
         try:
-            result = recognize_audio(tmp_path)
+            result = recognize_audio(tmp_path, request=request)
         finally:
             os.unlink(tmp_path)
 
-        if result is None:
-            return Response({'song': None, 'candidate': None,
-                             'detail': 'Fingerprint üretilemedi.',
-                             'reason': 'processing_error'})
-
-        # Bilgi yuklu cevap: accepted/candidate/reason UI'da debug icin
-        song = result.get('song')
-        candidate = result.get('candidate')
-        reason = result.get('reason', 'ok')
-        total_hashes = result.get('total_hashes', 0)
-
-        detail = None
-        if reason == 'silence':
-            detail = 'Kayıttan fingerprint üretilemedi (çok sessiz/gürültülü).'
-        elif reason == 'no_match':
-            detail = 'Veritabanında eşleşen şarkı yok.'
-        elif reason == 'low_confidence':
-            detail = (f"Zayıf sinyal: en yakın aday {candidate['artist']} - "
-                      f"{candidate['title']} (skor {candidate['confidence']}, "
-                      f"ratio {candidate['ratio']}, güven "
-                      f"{candidate['match_quality']})") if candidate else \
-                     'Güven eşiği aşılamadı.'
-
-        return Response({
-            'song': song,
-            'candidate': candidate,
-            'detail': detail,
-            'reason': reason,
-            'total_hashes': total_hashes,
-            'confidence': (song or {}).get('confidence', 0),
-            'relative_confidence': (song or {}).get('relative_confidence', 0.0),
-            'ratio': (song or {}).get('ratio', 0.0),
-            'match_quality': (song or candidate or {}).get('match_quality'),
-        })
+        return Response(result)
 
 
 # ──────────────────────────── LISTEN HISTORY ────────────────────────────
